@@ -1,0 +1,15 @@
+{
+  "name": "xss-pussy",
+  "version": "1.0.0",
+  "description": "XSS Automation Scanner",
+  "main": "index.js",
+  "repository": "git@github.com:adzkar/xss-pussy.git",
+  "author": "Adzkar Fauzie <adzkarfauzie02@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^10.0.0"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}
