@@ -31,3 +31,31 @@ export const cookieParser = (cookieString) => {
 
   return cookieObj;
 };
+
+export const formattedCookieParser = (cookieString) => {
+  // Return an empty object if cookieString
+  // is empty
+  if (cookieString === "") return {};
+
+  // Get each individual key-value pairs
+  // from the cookie string
+  // This returns a new array
+  let pairs = cookieString.split(";");
+
+  // Separate keys from values in each pair string
+  // Returns a new array which looks like
+  // [[key1,value1], [key2,value2], ...]
+  let splittedPairs = pairs.map((cookie) => cookie.split("="));
+
+  // Create an array with all key-value pairs
+  const cookieObj = splittedPairs.reduce((obj, cookie) => {
+    obj.push({
+      name: decodeURIComponent(cookie[0].trim()),
+      value: decodeURIComponent(cookie[1].trim()),
+    });
+
+    return obj;
+  }, []);
+
+  return cookieObj;
+};
