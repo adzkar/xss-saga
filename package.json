@@ -8,6 +8,7 @@
   "license": "MIT",
   "dependencies": {
     "dotenv": "^10.0.0",
+    "fs": "^0.0.1-security",
     "puppeteer-core": "^10.1.0"
   },
   "scripts": {
