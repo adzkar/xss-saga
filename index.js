@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-core";
 import dotenv from "dotenv";
+import fs from "fs";
 
 import { getFormMethod } from "./utils/commonUtils.mjs";
 import METHOD from "./constants/method.mjs";
@@ -7,11 +8,14 @@ import METHOD from "./constants/method.mjs";
 dotenv.config();
 
 const TARGET_URL = "http://localhost:8000/vulnerabilities/xss_d/";
-// const TARGET_URL = "https://google.com";
 const COOKIES = "PHPSESSID=8uvchrases5b5g7tfii24urs84; security=low";
+const FILE_NAME = "./payloads/payload.txt";
 
 (async () => {
   try {
+    const payloads = await fs.promises.readFile(FILE_NAME, "utf-8");
+    console.log(payloads, " payloads");
+    debugger;
     let filteredSelectTags = [];
     let rawJsFiles = [];
 
