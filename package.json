@@ -7,6 +7,7 @@
   "author": "Adzkar Fauzie <adzkarfauzie02@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "bluebird": "^3.7.2",
     "dotenv": "^10.0.0",
     "fs": "^0.0.1-security",
     "puppeteer-core": "^10.1.0"
