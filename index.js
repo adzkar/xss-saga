@@ -137,6 +137,8 @@ const FILE_NAME = "./payloads/payload.txt";
             });
 
             // Testing generated urls
+            // handling multiple tab processing
+            // using concurrency
             const results = await withBrowser(async (browser) => {
               return Bluebird.map(
                 cases,

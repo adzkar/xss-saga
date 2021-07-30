@@ -2,8 +2,10 @@
 import puppeteer from "puppeteer-core";
 import dotenv from "dotenv";
 import fs from "fs";
+import Bluebird from "bluebird";
 
 import { getFormMethod } from "./utils/commonUtils.mjs";
+import { withBrowser, withPage } from "./utils/browser.mjs";
 import METHOD from "./constants/method.mjs";
 
 dotenv.config();
@@ -100,8 +102,6 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
         return name.includes(x);
       });
     });
-    console.log(filteredSubmit);
-    process.exit(1);
 
     const filteredSelect = await page.evaluate(() => {
       const types = document.querySelectorAll("select");
@@ -138,15 +138,46 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
         if (forms.length > 0) {
           const method = await page.$eval("form", getFormMethod);
           if (method.toUpperCase() === METHOD.POST) {
-            await inputName.forEach(async (item) => {
-              await page.evaluate((item) => {
-                const typedTag = `${item.tag}[name=${item.name}]`;
-                document.querySelector(typedTag).value = "hola";
-              }, item);
+            // handling multiple tab processing
+            // using concurrency
+            const results = await withBrowser(async (browser) => {
+              return Bluebird.map(
+                payloads,
+                async (payload) => {
+                  return withPage(browser)(async (currentPage) => {
+                    let value = false;
+                    await currentPage.setExtraHTTPHeaders({ Cookie: COOKIES });
+                    await inputName.forEach(async (item) => {
+                      await page.evaluate(
+                        ({ item, payload }) => {
+                          const typedTag = `${item.tag}[name=${item.name}]`;
+                          document.querySelector(typedTag).value = payload;
+                        },
+                        { item, payload }
+                      );
+                    });
+                    //   await page.on("dialog", async (dialog) => {
+                    //     console.log(`Dialog Message: ${dialog.message()}`);
+                    //     value = true;
+                    //     await dialog.accept();
+                    //   });
+                    //   await page.goto(TARGET_URL, {
+                    //     waitUntil: "networkidle2",
+                    //   });
+                    return {
+                      result: value,
+                      payload: payload,
+                    };
+                  });
+                },
+                { concurrency: 5 }
+              );
             });
-            await filteredSubmit.forEach(async (item) => {
-              const clickedTag = `${item.tag}[name=${item.name}]`;
-            });
+            console.log(results, " results");
+
+            // await filteredSubmit.forEach(async (item) => {
+            //   const clickedTag = `${item.tag}[name=${item.name}]`;
+            // });
           }
         }
       } catch {
