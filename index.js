@@ -1,3 +1,4 @@
+"use strict";
 import puppeteer from "puppeteer-core";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -13,11 +14,9 @@ const FILE_NAME = "./payloads/payload.txt";
 
 (async () => {
   try {
-    const payloads = await fs.promises.readFile(FILE_NAME, "utf-8");
-    console.log(payloads, " payloads");
-    debugger;
-    let filteredSelectTags = [];
-    let rawJsFiles = [];
+    const payloads = await (
+      await fs.promises.readFile(FILE_NAME, "utf-8")
+    ).split("\n");
 
     const browser = await puppeteer.launch({
       headless: true,
@@ -26,7 +25,15 @@ const FILE_NAME = "./payloads/payload.txt";
     const page = await browser.newPage();
 
     await page.setExtraHTTPHeaders({ Cookie: COOKIES });
-    const response = await page.goto(TARGET_URL);
+
+    const response = await page
+      .goto(TARGET_URL, {
+        waitUntil: "networkidle2",
+      })
+      .catch(() => {
+        console.log("Invalid URL or The Web is not found");
+        process.exit(1);
+      });
 
     if (page.url() !== TARGET_URL) {
       console.log("You need the credential");
@@ -80,11 +87,6 @@ const FILE_NAME = "./payloads/payload.txt";
       );
     });
 
-    console.log(filteredInputName);
-    console.log(filteredSubmitName);
-    console.log(filteredSelectName);
-    debugger;
-
     console.log("Running Reflected XSS Scanner");
     // checking if the page is exist
     if (response.status() === 200) {
@@ -96,20 +98,44 @@ const FILE_NAME = "./payloads/payload.txt";
         if (forms.length > 0) {
           const method = await page.$eval("form", getFormMethod);
           if (method === METHOD.GET) {
+            const queries = [];
+            payloads.forEach((payload) => {
+              const inputQueries = filteredInputName
+                .map((item) => {
+                  return `${item}=${payload}&`;
+                })
+                .join();
+              if (inputQueries.length > 0) {
+                queries.push(`?${inputQueries.slice(0, -1)}`);
+              }
+              const submitQueries = filteredSubmitName
+                .map((item) => {
+                  return `${item}=${payload}&`;
+                })
+                .join();
+              if (submitQueries.length > 0) {
+                queries.push(`?${submitQueries.slice(0, -1)}`);
+              }
+              const selectQueries = filteredSelectName
+                .map((item) => {
+                  return `${item}=${payload}&`;
+                })
+                .join();
+              if (selectQueries.length > 0) {
+                queries.push(`?${selectQueries.slice(0, -1)}`);
+              }
+            });
+
+            await queries.map(async (query) => {
+              const testedUrl = `${TARGET_URL}${query}`;
+              console.log(testedUrl, " tested url");
+            });
           }
         }
       } catch {
         console.log("There is no possibility for reflected XSS");
       }
     }
-
-    debugger;
-
-    // await page.screenshot({
-    //   path: `${process.env.SCREENSHOTS_PATH}/${fileNameGenerator({
-    //     name: "ss",
-    //   })}`,
-    // });
 
     await browser.close();
   } catch (err) {
