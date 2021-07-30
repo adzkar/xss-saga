@@ -2,7 +2,9 @@
 import puppeteer from "puppeteer-core";
 import dotenv from "dotenv";
 import fs from "fs";
+import Bluebird from "bluebird";
 
+import { withBrowser, withPage } from "./utils/browser.mjs";
 import { getFormMethod } from "./utils/commonUtils.mjs";
 import METHOD from "./constants/method.mjs";
 
@@ -126,10 +128,41 @@ const FILE_NAME = "./payloads/payload.txt";
               }
             });
 
-            await queries.map(async (query) => {
+            const cases = queries.map((query, index) => {
               const testedUrl = `${TARGET_URL}${query}`;
-              console.log(testedUrl, " tested url");
+              return {
+                payload: payloads[index],
+                url: testedUrl,
+              };
             });
+
+            // Testing generated urls
+            const results = await withBrowser(async (browser) => {
+              return Bluebird.map(
+                cases,
+                async ({ url, payload }) => {
+                  return withPage(browser)(async (page) => {
+                    let value = false;
+                    await page.setExtraHTTPHeaders({ Cookie: COOKIES });
+                    await page.on("dialog", async (dialog) => {
+                      console.log(`Dialog Message: ${dialog.message()}`);
+                      value = true;
+                      await dialog.accept();
+                    });
+                    await page.goto(url, {
+                      waitUntil: "networkidle2",
+                    });
+
+                    return {
+                      result: value,
+                      payload: payload,
+                    };
+                  });
+                },
+                { concurrency: 5 }
+              );
+            });
+            console.log(results, " results");
           }
         }
       } catch {
