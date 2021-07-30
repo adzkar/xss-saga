@@ -13,7 +13,8 @@
     "puppeteer-core": "^10.1.0"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "stored": "node stored.js"
   },
   "type": "module"
 }

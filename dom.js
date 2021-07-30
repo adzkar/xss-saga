@@ -10,7 +10,7 @@ import METHOD from "./constants/method.mjs";
 
 dotenv.config();
 
-const TARGET_URL = "http://localhost:8000/vulnerabilities/xss_r/";
+const TARGET_URL = "http://localhost:8000/vulnerabilities/xss_d/";
 const COOKIES = "PHPSESSID=8uvchrases5b5g7tfii24urs84; security=low";
 const FILE_NAME = "./payloads/payload.txt";
 
