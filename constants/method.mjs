@@ -1,6 +1,6 @@
 export default {
-  POST: "post",
-  GET: "get",
-  PUT: "put",
-  DELETE: "delete",
+  POST: "POST",
+  GET: "GET",
+  PUT: "PUT",
+  DELETE: "DELETE",
 };
