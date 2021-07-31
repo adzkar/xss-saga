@@ -138,46 +138,47 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
         if (forms.length > 0) {
           const method = await page.$eval("form", getFormMethod);
           if (method.toUpperCase() === METHOD.POST) {
-            // handling multiple tab processing
-            // using concurrency
-            const results = await withBrowser(async (browser) => {
-              return Bluebird.map(
-                payloads,
-                async (payload) => {
-                  return withPage(browser)(async (currentPage) => {
-                    let value = false;
-                    await currentPage.setExtraHTTPHeaders({ Cookie: COOKIES });
-                    await inputName.forEach(async (item) => {
-                      await page.evaluate(
-                        ({ item, payload }) => {
-                          const typedTag = `${item.tag}[name=${item.name}]`;
-                          document.querySelector(typedTag).value = payload;
-                        },
-                        { item, payload }
-                      );
-                    });
-                    //   await page.on("dialog", async (dialog) => {
-                    //     console.log(`Dialog Message: ${dialog.message()}`);
-                    //     value = true;
-                    //     await dialog.accept();
-                    //   });
-                    //   await page.goto(TARGET_URL, {
-                    //     waitUntil: "networkidle2",
-                    //   });
-                    return {
-                      result: value,
-                      payload: payload,
-                    };
-                  });
-                },
-                { concurrency: 5 }
-              );
+            // generate cases
+            const cases = payloads.map((payload) => {
+              return {
+                url: TARGET_URL,
+                payload,
+                tags: inputName,
+              };
             });
-            console.log(results, " results");
 
-            // await filteredSubmit.forEach(async (item) => {
-            //   const clickedTag = `${item.tag}[name=${item.name}]`;
-            // });
+            await Bluebird.map(cases, async ({ tags, payload }) => {
+              await tags.forEach(async (item) => {
+                const typedTag = `${item.tag}[name=${item.name}]`;
+                const clickedButton = filteredSubmit?.[0];
+
+                await page.evaluate(
+                  ({ typedTag, payload }) => {
+                    document.querySelector(typedTag).value = payload;
+                  },
+                  {
+                    typedTag,
+                    payload,
+                  }
+                );
+                await page.waitForSelector(
+                  `${clickedButton.tag}[name=${clickedButton.name}]`
+                );
+                await page.click(
+                  `${clickedButton.tag}[name=${clickedButton.name}]`
+                );
+              });
+              await page
+                .evaluate(
+                  ({ typedTag, payload }) => {
+                    document.querySelector(typedTag).value = payload;
+                  },
+                  { typedTag, payload }
+                )
+                .catch((err) => {
+                  console.log(err);
+                });
+            });
           }
         }
       } catch {

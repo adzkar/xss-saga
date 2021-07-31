@@ -1,6 +1,6 @@
+<img onerror=`alert(1)` src="">
 hola
 abc
 kata kunci
-<img onerror=`alert(1)` src="">
 <img onerror="alert(1)" src="">
 <script>alert(1)</script>
