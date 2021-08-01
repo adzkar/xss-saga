@@ -5,7 +5,6 @@ import fs from "fs";
 import Bluebird from "bluebird";
 
 import { getFormMethod } from "./utils/commonUtils.mjs";
-import { withBrowser, withPage } from "./utils/browser.mjs";
 import METHOD from "./constants/method.mjs";
 
 dotenv.config();
@@ -30,6 +29,17 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
 
     await page.setExtraHTTPHeaders({ Cookie: COOKIES });
 
+    // variable for checking if the xss is found
+    var isFound = false;
+    await page.on("dialog", async (dialog) => {
+      try {
+        console.log(dialog.message(), " dialog message");
+        isFound = true;
+        await dialog.accept();
+      } catch {
+        console.log("no alert");
+      }
+    });
     const response = await page
       .goto(TARGET_URL, {
         waitUntil: "networkidle2",
@@ -42,7 +52,6 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
     if (page.url() !== TARGET_URL) {
       console.log("You need the credential");
       process.exit(1);
-      b;
     }
 
     const filteredInput = await page.evaluate(() => {
@@ -147,38 +156,50 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
               };
             });
 
-            await Bluebird.map(cases, async ({ tags, payload }) => {
-              await tags.forEach(async (item) => {
-                const typedTag = `${item.tag}[name=${item.name}]`;
-                const clickedButton = filteredSubmit?.[0];
+            const results = await Bluebird.map(
+              cases,
+              async ({ tags, payload }) => {
+                await tags.forEach(async (item) => {
+                  const typedTag = `${item.tag}[name=${item.name}]`;
+                  const buttonTag = filteredSubmit?.[0];
+                  const clickedButton = `${buttonTag.tag}[name=${buttonTag.name}]`;
+                  console.log(typedTag, " typed tag");
+                  await page
+                    .evaluate(
+                      ({ typedTag, payload }) => {
+                        document.querySelector(typedTag).value = payload;
+                      },
+                      {
+                        typedTag,
+                        payload,
+                      }
+                    )
+                    .catch((err) => {
+                      // console.log(err, " err typing payload");
+                      console.log(" err typing payload");
+                    });
 
-                await page.evaluate(
-                  ({ typedTag, payload }) => {
-                    document.querySelector(typedTag).value = payload;
-                  },
-                  {
-                    typedTag,
-                    payload,
+                  const waitSubmitBtn = await page
+                    .waitForSelector(clickedButton)
+                    .catch(() => {
+                      console.log(" err select button");
+                    });
+
+                  try {
+                    await waitSubmitBtn.click();
+
+                    await page.waitForNavigation();
+                  } catch {
+                    console.log("failed to click btn");
                   }
-                );
-                await page.waitForSelector(
-                  `${clickedButton.tag}[name=${clickedButton.name}]`
-                );
-                await page.click(
-                  `${clickedButton.tag}[name=${clickedButton.name}]`
-                );
-              });
-              await page
-                .evaluate(
-                  ({ typedTag, payload }) => {
-                    document.querySelector(typedTag).value = payload;
-                  },
-                  { typedTag, payload }
-                )
-                .catch((err) => {
-                  console.log(err);
                 });
-            });
+
+                return isFound;
+              }
+            );
+
+            console.log(isFound, " is found");
+            console.log(results, " results");
           }
         }
       } catch {
