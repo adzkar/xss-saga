@@ -36,6 +36,10 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
         console.log(dialog.message(), " dialog message");
         isFound = true;
         await dialog.accept();
+        if (dialog.message()) {
+          console.log("XSS Stored is found");
+          await browser.close();
+        }
       } catch {
         console.log("no alert");
       }
@@ -198,7 +202,6 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
               }
             );
 
-            console.log(isFound, " is found");
             console.log(results, " results");
           }
         }
@@ -207,7 +210,7 @@ const CANCELED_BUTTONS = ["clear", "reset", "cancel"];
       }
     }
 
-    // await browser.close();
+    await browser.close();
   } catch (err) {
     console.log(err);
   }
